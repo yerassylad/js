@@ -1,6 +1,7 @@
 import Search from './models/Search';
 import Recipe from './models/Recipe';
 import * as searchView from './views/searchView';
+import * as recipeView from './views/recipeView';
 import { elements, renderLoader, clearLoader } from './views/base';
 
 // * global state of the app
@@ -56,8 +57,14 @@ elements.searchResPages.addEventListener('click', e => {
 const controlRecipe = async () => {
   // get id from url
   const id = window.location.hash.replace('#', '');
+
   if (id) {
     // Prepare UI for changes
+    recipeView.clearRecipe();
+    renderLoader(elements.recipe);
+
+    // highlight selected serach item
+    if (state.search) searchView.highlightSelected(id);
 
     // create new recipe object
     state.recipe = new Recipe(id);
@@ -65,15 +72,17 @@ const controlRecipe = async () => {
     try {
       // get recipe data and parse recipe ingredients
       await state.recipe.getRecipe();
-      console.log(state.recipe.ingredients);
       state.recipe.parseIngredients();
+      console.log(state.recipe);
 
       // // calc Time and calc servings
       state.recipe.calcTime();
       state.recipe.calcServings();
 
       // render recipe
-      console.log(state.recipe);
+      // recipeView.clearRecipe();
+      clearLoader();
+      recipeView.renderRecipe(state.recipe);
     } catch (err) {
       alert('Error processing recipe');
     }
@@ -84,3 +93,20 @@ const controlRecipe = async () => {
 // window.addEventListener('load', controlRecipe);
 
 ['hashchange' , 'load'].forEach(event => window.addEventListener(event, controlRecipe));
+
+
+// handling recipe btn clicks
+elements.recipe.addEventListener('click', e => {
+  if (e.target.matches('.btn-dec, .btn-dec *')) {
+    // decrease btn is clicked
+    if (state.recipe.servings > 1) {
+      state.recipe.updateServings('dec');
+      recipeView.updateServingsIngredients(state.recipe);
+    }
+  } else if (e.target.matches('.btn-inc, .btn-inc *')) {
+    // inc btn is clicked
+    state.recipe.updateServings('inc');
+    recipeView.updateServingsIngredients(state.recipe);
+  }
+  console.log(state.recipe);
+});
